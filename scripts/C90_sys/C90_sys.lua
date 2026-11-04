@@ -1233,6 +1233,7 @@ C90DR_engine_throttle_detent					= create_dataref("laminar/c90/engine/throttle_d
 C90DR_gear_handle								= create_dataref("laminar/c90/gear/handle", "number", C90_gear_handle_DRhandler)
 C90DR_gear_handle_detent						= create_dataref("laminar/c90/gear/handle_detent", "number", empty_handler)
 C90DR_gear_horn						            = create_dataref("laminar/c90/gear/gear_horn", "number", empty_handler)--IBAV8N, Aug30-23, dref for fmod to use
+C90DR_trim_switch                               = create_dataref("cpuwolf/c90/switches/anim/trim", "number", empty_handler)     --yoke trim switch animation 1: down 0: natural -1: up
 --*************************************************************************************--
 --** 				             CUSTOM COMMAND HANDLERS            			     **--
 --*************************************************************************************--
@@ -6104,6 +6105,17 @@ function C90_compass(deg1, deg2, zero_one_eighty)        --IBAV8N, Jan26-22, ret
     return y * C90_ternary(zero_one_eighty > 0, 1, -1)
 end
 
+----- TRIM SWITCH ANIMATION ---------------------------------------------------------------
+function C90_trim_switch_animation()
+    if simDR_autopilot_trim_down == 1 then
+        C90DR_trim_switch = 1
+    elseif simDR_autopilot_trim_up == 1 then
+        C90DR_trim_switch = -1
+    else
+        C90DR_trim_switch = 0
+    end
+end
+
 ----- DEFERRED INIT ---------------------------------------------------------------------
 function C90_flight_start_DeferredInit()
 
@@ -6572,6 +6584,8 @@ function after_physics()
 	C90_warning_annunciators()
     -- PROPS
     C90_beta()
+    -- TRIM SWITCH ANIMATION
+    C90_trim_switch_animation()
 
     if C90.test == 0 then print("EVO: 17. After physics routines executing.  Load successful.") C90.test = 1 end --only do this once
 end
