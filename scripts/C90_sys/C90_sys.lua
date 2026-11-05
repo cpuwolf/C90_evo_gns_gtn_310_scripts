@@ -1234,6 +1234,7 @@ C90DR_gear_handle								= create_dataref("laminar/c90/gear/handle", "number", C
 C90DR_gear_handle_detent						= create_dataref("laminar/c90/gear/handle_detent", "number", empty_handler)
 C90DR_gear_horn						            = create_dataref("laminar/c90/gear/gear_horn", "number", empty_handler)--IBAV8N, Aug30-23, dref for fmod to use
 C90DR_trim_switch                               = create_dataref("cpuwolf/c90/switches/anim/trim", "number", empty_handler)     --yoke trim switch animation 1: down 0: natural -1: up
+C90DR_yoke_ident_switch_pos                     = create_dataref("cpuwolf/c90/switches/anim/atc", "number", empty_handler) -- @cpuwolf c90 yoke ident switch position
 --*************************************************************************************--
 --** 				             CUSTOM COMMAND HANDLERS            			     **--
 --*************************************************************************************--
@@ -5586,6 +5587,7 @@ end
 
 function sim_xpdr_ident_CMDhandlerAfter(phase, duration)
     C90DR_avionics_ctl92_xpdr_ident_switch_pos = C90_ternary(phase == 2, 0, 1)
+    C90DR_yoke_ident_switch_pos = C90_ternary(phase == 2, 0, 1)
 end
 
 function sim_stby_nav1_coarse_dn_CMDhandlerAfter(phase, duration)
@@ -5878,6 +5880,26 @@ end
 function g1000n3_decrease_ias()
     simDR_autopilot_airspeed_dial_kts = simDR_autopilot_airspeed_dial_kts - 1
 end
+
+----- TRIM SWITCH ANIMATION ---------------------------------------------------------------
+function C90_pitch_trim_down_CMDhandlerAfter(phase, duration)
+    if phase == 0 then
+        C90DR_trim_switch = 1
+        print("Pitch Trim Down")
+    elseif phase == 2 then
+        C90DR_trim_switch = 0
+    end
+end
+
+
+function C90_pitch_trim_up_CMDhandlerAfter(phase, duration)
+    if phase == 0 then
+        C90DR_trim_switch = -1
+        print("Pitch Trim Up")
+    elseif phase == 2 then
+        C90DR_trim_switch = 0
+    end
+end
 --*************************************************************************************--
 --** 				              WRAP X-PLANE COMMANDS                  	    	 **--
 --*************************************************************************************--
@@ -6004,6 +6026,14 @@ else
     simCMD_g1000n3_nose_down	    = wrap_command("sim/GPS/g1000n3_nose_down", sim_g1000n3_nose_down_CMDhandlerBefore, empty_CMDhandlerAfter)
     simCMD_g1000n3_nose_up	        = wrap_command("sim/GPS/g1000n3_nose_up", sim_g1000n3_nose_up_CMDhandlerBefore, empty_CMDhandlerAfter)
 end
+
+-- YOKE
+C90CMD_pitch_trim_down = wrap_command("sim/flight_controls/pitch_trim_down", empty_CMDhandlerBefore,
+C90_pitch_trim_down_CMDhandlerAfter)
+C90CMD_pitch_trim_up   = wrap_command("sim/flight_controls/pitch_trim_up", empty_CMDhandlerBefore,
+C90_pitch_trim_up_CMDhandlerAfter)
+
+
 -- STARTER SUBROUTINES
 function starter_torque()                   --IBAV8N, Jun13-21, reduce available starter torque if corresp. gen is on, per workbook.
     if (C90DR_powerplant_ign_start_switch_pos_L ~= 0 and C90DR_electrical_gen_L_switch_pos > -1)
@@ -6105,16 +6135,7 @@ function C90_compass(deg1, deg2, zero_one_eighty)        --IBAV8N, Jan26-22, ret
     return y * C90_ternary(zero_one_eighty > 0, 1, -1)
 end
 
------ TRIM SWITCH ANIMATION ---------------------------------------------------------------
-function C90_trim_switch_animation()
-    if simDR_autopilot_trim_down == 1 then
-        C90DR_trim_switch = 1
-    elseif simDR_autopilot_trim_up == 1 then
-        C90DR_trim_switch = -1
-    else
-        C90DR_trim_switch = 0
-    end
-end
+
 
 ----- DEFERRED INIT ---------------------------------------------------------------------
 function C90_flight_start_DeferredInit()
@@ -6584,8 +6605,6 @@ function after_physics()
 	C90_warning_annunciators()
     -- PROPS
     C90_beta()
-    -- TRIM SWITCH ANIMATION
-    C90_trim_switch_animation()
 
     if C90.test == 0 then print("EVO: 17. After physics routines executing.  Load successful.") C90.test = 1 end --only do this once
 end
