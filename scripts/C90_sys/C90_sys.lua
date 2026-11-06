@@ -1235,8 +1235,11 @@ C90DR_gear_handle_detent						= create_dataref("laminar/c90/gear/handle_detent",
 C90DR_gear_horn						            = create_dataref("laminar/c90/gear/gear_horn", "number", empty_handler)--IBAV8N, Aug30-23, dref for fmod to use
 C90DR_trim_switch                               = create_dataref("cpuwolf/c90/switches/anim/trim", "number", empty_handler)     --yoke trim switch animation 1: down 0: natural -1: up
 C90DR_yoke_ident_switch_pos                     = create_dataref("cpuwolf/c90/switches/anim/atc", "number", empty_handler) -- @cpuwolf c90 yoke ident switch position
-C90DR_yoke_timer_mode_switch_pos            = create_dataref("cpuwolf/c90/switches/anim/time_sel", "number",
-    empty_handler)                                                                                                               -- @cpuwolf c90 yoke ident switch position
+C90DR_yoke_timer_mode_switch_pos            = create_dataref("cpuwolf/c90/switches/anim/time_sel", "number", empty_handler)                                                                                                               -- @cpuwolf c90 yoke ident switch position
+C90DR_yoke_timer_cycle_switch_pos           = create_dataref("cpuwolf/c90/switches/anim/time_cycle", "number",
+    empty_handler)                                                                                                             -- @cpuwolf c90 yoke ident switch position
+C90DR_yoke_cws_switch_pos                   = create_dataref("cpuwolf/c90/switches/anim/cws", "number",
+    empty_handler)                                                                                                          -- @cpuwolf c90 yoke ident switch position
 --*************************************************************************************--
 --** 				             CUSTOM COMMAND HANDLERS            			     **--
 --*************************************************************************************--
@@ -5912,9 +5915,18 @@ end
 
 function C90_timer_cycle_CMDhandlerAfter(phase, duration)
     if phase == 0 then
-        C90DR_yoke_timer_mode_switch_pos = -1
+        C90DR_yoke_timer_cycle_switch_pos = 1
     elseif phase == 2 then
-        C90DR_yoke_timer_mode_switch_pos = 0
+        C90DR_yoke_timer_cycle_switch_pos = 0
+    end
+end
+
+----- YOKE CWS ANIMATION ---------------------------------------------------------------
+function C90_cws_CMDhandlerAfter(phase, duration)
+    if phase == 0 then
+        C90DR_yoke_cws_switch_pos = 1
+    elseif phase == 2 then
+        C90DR_yoke_cws_switch_pos = 0
     end
 end
 --*************************************************************************************--
@@ -6049,7 +6061,7 @@ C90CMD_pitch_trim_down = wrap_command("sim/flight_controls/pitch_trim_down", emp
 C90CMD_pitch_trim_up   = wrap_command("sim/flight_controls/pitch_trim_up", empty_CMDhandlerBefore, C90_pitch_trim_up_CMDhandlerAfter)
 C90CMD_timer_mode      = wrap_command("sim/instruments/timer_mode", empty_CMDhandlerBefore, C90_timer_mode_CMDhandlerAfter)
 C90CMD_timer_sycle     = wrap_command("sim/instruments/timer_cycle", empty_CMDhandlerBefore, C90_timer_cycle_CMDhandlerAfter)
-
+C90CMD_cws             = wrap_command("sim/autopilot/control_wheel_steer", empty_CMDhandlerBefore, C90_cws_CMDhandlerAfter)
 -- STARTER SUBROUTINES
 function starter_torque()                   --IBAV8N, Jun13-21, reduce available starter torque if corresp. gen is on, per workbook.
     if (C90DR_powerplant_ign_start_switch_pos_L ~= 0 and C90DR_electrical_gen_L_switch_pos > -1)
