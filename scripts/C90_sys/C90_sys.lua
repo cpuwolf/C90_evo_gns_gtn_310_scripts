@@ -1233,15 +1233,20 @@ C90DR_engine_throttle_detent					= create_dataref("laminar/c90/engine/throttle_d
 C90DR_gear_handle								= create_dataref("laminar/c90/gear/handle", "number", C90_gear_handle_DRhandler)
 C90DR_gear_handle_detent						= create_dataref("laminar/c90/gear/handle_detent", "number", empty_handler)
 C90DR_gear_horn						            = create_dataref("laminar/c90/gear/gear_horn", "number", empty_handler)--IBAV8N, Aug30-23, dref for fmod to use
-C90DR_trim_switch                               = create_dataref("cpuwolf/c90/switches/anim/trim", "number", empty_handler)     --yoke trim switch animation 1: down 0: natural -1: up
-C90DR_yoke_ident_switch_pos                     = create_dataref("cpuwolf/c90/switches/anim/atc", "number", empty_handler) -- @cpuwolf c90 yoke ident switch position
-C90DR_yoke_timer_mode_switch_pos            = create_dataref("cpuwolf/c90/switches/anim/time_sel", "number", empty_handler)                                                                                                               -- @cpuwolf c90 yoke ident switch position
-C90DR_yoke_timer_cycle_switch_pos           = create_dataref("cpuwolf/c90/switches/anim/time_cycle", "number",
-    empty_handler)                                                                                                             -- @cpuwolf c90 yoke ident switch position
-C90DR_yoke_cws_switch_pos                   = create_dataref("cpuwolf/c90/switches/anim/cws", "number",
-    empty_handler)                                                                                                          -- @cpuwolf c90 yoke ident switch position
-C90DR_yoke_ap_disco_switch_pos                   = create_dataref("cpuwolf/c90/switches/anim/ap", "number",
-    empty_handler)                                                                                                          -- @cpuwolf c90 yoke ident switch position
+-- YOKE SWITCH ANIMATIONS (@cpuwolf). These dataref names are BAKED INTO THE YOKE OBJ FILES
+-- (C90B_cockpit.obj and objects/C90B_cockpit/c90B_yoke.obj) - do not rename without re-exporting.
+-- value convention: 1 = pressed/deflected, 0 = neutral; trim: 1 = down, 0 = neutral, -1 = up
+-- (OBJ8 extrapolates beyond its key range, so +/-1 gives a symmetric rocker deflection)
+C90DR_yoke_trim_switch_pos			= create_dataref("cpuwolf/c90/switches/anim/trim", "number", empty_handler)		-- yoke trim rocker
+C90DR_yoke_ident_switch_pos			= create_dataref("cpuwolf/c90/switches/anim/atc", "number", empty_handler)		-- yoke ATC/IDENT button
+C90DR_yoke_timer_mode_switch_pos	= create_dataref("cpuwolf/c90/switches/anim/time_sel", "number", empty_handler)	-- yoke time selector: SEL position
+C90DR_yoke_timer_cycle_switch_pos	= create_dataref("cpuwolf/c90/switches/anim/time_cycle", "number", empty_handler)	-- yoke time selector: CYCLE position
+C90DR_yoke_cws_switch_pos			= create_dataref("cpuwolf/c90/switches/anim/cws", "number", empty_handler)		-- yoke CWS button
+C90DR_yoke_ap_disco_switch_pos		= create_dataref("cpuwolf/c90/switches/anim/ap", "number", empty_handler)		-- yoke AP disconnect button
+-- TODO: these two animations exist in the OBJ files, but their VC buttons have no manipulator/command yet.
+-- The datarefs are created anyway so the animations resolve to 0 instead of to a missing dataref.
+C90DR_yoke_ptt_switch_pos			= create_dataref("cpuwolf/c90/switches/anim/ptt", "number", empty_handler)			-- yoke PTT button (no command yet)
+C90DR_yoke_advline_switch_pos		= create_dataref("cpuwolf/c90/switches/anim/advline", "number", empty_handler)	-- yoke ADV LINE button (no command yet)
 --*************************************************************************************--
 --** 				             CUSTOM COMMAND HANDLERS            			     **--
 --*************************************************************************************--
@@ -5888,58 +5893,55 @@ function g1000n3_decrease_ias()
     simDR_autopilot_airspeed_dial_kts = simDR_autopilot_airspeed_dial_kts - 1
 end
 
------ TRIM SWITCH ANIMATION ---------------------------------------------------------------
-function C90_pitch_trim_down_CMDhandlerAfter(phase, duration)
-    if phase == 0 then
-        C90DR_trim_switch = 1
-    elseif phase == 2 then
-        C90DR_trim_switch = 0
-    end
+----- YOKE SWITCH ANIMATION (command driven) ----------------------------------------------
+---- trim is a 3 position rocker: 1 = down, -1 = up, 0 = neutral
+function sim_pitch_trim_down_CMDhandlerAfter(phase, duration)
+    if phase == 0 then C90DR_yoke_trim_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_trim_switch_pos = 0 end
 end
 
-
-function C90_pitch_trim_up_CMDhandlerAfter(phase, duration)
-    if phase == 0 then
-        C90DR_trim_switch = -1
-    elseif phase == 2 then
-        C90DR_trim_switch = 0
-    end
+function sim_pitch_trim_up_CMDhandlerAfter(phase, duration)
+    if phase == 0 then C90DR_yoke_trim_switch_pos = -1
+    elseif phase == 2 then C90DR_yoke_trim_switch_pos = 0 end
 end
 
------ YOKE TIMER SWITCH ANIMATION ---------------------------------------------------------------
-function C90_timer_mode_CMDhandlerAfter(phase, duration)
-    if phase == 0 then
-        C90DR_yoke_timer_mode_switch_pos = 1
-    elseif phase == 2 then
-        C90DR_yoke_timer_mode_switch_pos = 0
-    end
+function sim_timer_mode_CMDhandlerAfter(phase, duration)        -- yoke time selector SEL
+    if phase == 0 then C90DR_yoke_timer_mode_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_timer_mode_switch_pos = 0 end
 end
 
-function C90_timer_cycle_CMDhandlerAfter(phase, duration)
-    if phase == 0 then
-        C90DR_yoke_timer_cycle_switch_pos = 1
-    elseif phase == 2 then
-        C90DR_yoke_timer_cycle_switch_pos = 0
-    end
+function sim_timer_cycle_CMDhandlerAfter(phase, duration)       -- yoke time selector CYCLE
+    if phase == 0 then C90DR_yoke_timer_cycle_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_timer_cycle_switch_pos = 0 end
 end
 
------ YOKE CWS ANIMATION ---------------------------------------------------------------
-function C90_cws_CMDhandlerAfter(phase, duration)
-    if phase == 0 then
-        C90DR_yoke_cws_switch_pos = 1
-    elseif phase == 2 then
-        C90DR_yoke_cws_switch_pos = 0
-    end
+function sim_cws_CMDhandlerAfter(phase, duration)
+    if phase == 0 then C90DR_yoke_cws_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_cws_switch_pos = 0 end
 end
 
------ YOKE AP ANIMATION ---------------------------------------------------------------
-function C90_ap_disco_CMDhandlerAfter(phase, duration)
-    if phase == 0 then
-        C90DR_yoke_ap_disco_switch_pos = 1
-    elseif phase == 2 then
-        C90DR_yoke_ap_disco_switch_pos = 0
-    end
+function sim_ap_disco_CMDhandlerAfter(phase, duration)
+    if phase == 0 then C90DR_yoke_ap_disco_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_ap_disco_switch_pos = 0 end
 end
+
+function sim_yoke_xpdr_ident_CMDhandlerAfter(phase, duration)   -- G1000 variant: yoke button only, no CTL92 panel
+    if phase == 0 then C90DR_yoke_ident_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_ident_switch_pos = 0 end
+end
+
+---- TODO: nothing drives these two yet. Once the VC button gets a manipulator, wrap it, e.g.
+---- simCMD_yoke_ptt = wrap_command("<command>", empty_CMDhandlerBefore, sim_yoke_ptt_CMDhandlerAfter)
+function sim_yoke_ptt_CMDhandlerAfter(phase, duration)
+    if phase == 0 then C90DR_yoke_ptt_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_ptt_switch_pos = 0 end
+end
+
+function sim_yoke_advline_CMDhandlerAfter(phase, duration)
+    if phase == 0 then C90DR_yoke_advline_switch_pos = 1
+    elseif phase == 2 then C90DR_yoke_advline_switch_pos = 0 end
+end
+
 --*************************************************************************************--
 --** 				              WRAP X-PLANE COMMANDS                  	    	 **--
 --*************************************************************************************--
@@ -6065,15 +6067,21 @@ else
     print("EVO: 12. LOADING G1000 Command Wrappers")
     simCMD_g1000n3_nose_down	    = wrap_command("sim/GPS/g1000n3_nose_down", sim_g1000n3_nose_down_CMDhandlerBefore, empty_CMDhandlerAfter)
     simCMD_g1000n3_nose_up	        = wrap_command("sim/GPS/g1000n3_nose_up", sim_g1000n3_nose_up_CMDhandlerBefore, empty_CMDhandlerAfter)
+    -- yoke ATC/IDENT button animation (the G1000 variant has no CTL92 transponder panel)
+    simCMD_yoke_xpdr_ident      = wrap_command("sim/transponder/transponder_ident", empty_CMDhandlerBefore, sim_yoke_xpdr_ident_CMDhandlerAfter)
 end
 
--- YOKE
-C90CMD_pitch_trim_down = wrap_command("sim/flight_controls/pitch_trim_down", empty_CMDhandlerBefore, C90_pitch_trim_down_CMDhandlerAfter)
-C90CMD_pitch_trim_up   = wrap_command("sim/flight_controls/pitch_trim_up", empty_CMDhandlerBefore, C90_pitch_trim_up_CMDhandlerAfter)
-C90CMD_timer_mode      = wrap_command("sim/instruments/timer_mode", empty_CMDhandlerBefore, C90_timer_mode_CMDhandlerAfter)
-C90CMD_timer_sycle     = wrap_command("sim/instruments/timer_cycle", empty_CMDhandlerBefore, C90_timer_cycle_CMDhandlerAfter)
-C90CMD_cws             = wrap_command("sim/autopilot/control_wheel_steer", empty_CMDhandlerBefore, C90_cws_CMDhandlerAfter)
-C90CMD_ap_disco        = wrap_command("sim/autopilot/servos_yawd_trim_off_any", empty_CMDhandlerBefore, C90_ap_disco_CMDhandlerAfter)
+-- YOKE SWITCH ANIMATIONS - valid for all variants (GNS / GTN / G1000)
+simCMD_pitch_trim_down     = wrap_command("sim/flight_controls/pitch_trim_down", empty_CMDhandlerBefore, sim_pitch_trim_down_CMDhandlerAfter)
+simCMD_pitch_trim_up       = wrap_command("sim/flight_controls/pitch_trim_up", empty_CMDhandlerBefore, sim_pitch_trim_up_CMDhandlerAfter)
+-- electric trim rocker: what a joystick button is usually bound to, drives the same switch animation.
+-- the mechanical trim wheel commands are deliberately NOT wrapped: turning the wheel must not move the yoke switch.
+simCMD_pitch_trim_down_elec = wrap_command("sim/flight_controls/pitch_trim_down_elec", empty_CMDhandlerBefore, sim_pitch_trim_down_CMDhandlerAfter)
+simCMD_pitch_trim_up_elec   = wrap_command("sim/flight_controls/pitch_trim_up_elec", empty_CMDhandlerBefore, sim_pitch_trim_up_CMDhandlerAfter)
+simCMD_timer_mode          = wrap_command("sim/instruments/timer_mode", empty_CMDhandlerBefore, sim_timer_mode_CMDhandlerAfter)
+simCMD_timer_cycle         = wrap_command("sim/instruments/timer_cycle", empty_CMDhandlerBefore, sim_timer_cycle_CMDhandlerAfter)
+simCMD_cws                 = wrap_command("sim/autopilot/control_wheel_steer", empty_CMDhandlerBefore, sim_cws_CMDhandlerAfter)
+simCMD_ap_disco            = wrap_command("sim/autopilot/servos_yawd_trim_off_any", empty_CMDhandlerBefore, sim_ap_disco_CMDhandlerAfter)
 -- STARTER SUBROUTINES
 function starter_torque()                   --IBAV8N, Jun13-21, reduce available starter torque if corresp. gen is on, per workbook.
     if (C90DR_powerplant_ign_start_switch_pos_L ~= 0 and C90DR_electrical_gen_L_switch_pos > -1)
@@ -6179,6 +6187,16 @@ end
 
 ----- DEFERRED INIT ---------------------------------------------------------------------
 function C90_flight_start_DeferredInit()
+
+	-- YOKE SWITCH ANIMATIONS (a script reload while a button was held can leave 1 / -1 behind)
+	C90DR_yoke_trim_switch_pos = 0
+	C90DR_yoke_ident_switch_pos = 0
+	C90DR_yoke_timer_mode_switch_pos = 0
+	C90DR_yoke_timer_cycle_switch_pos = 0
+	C90DR_yoke_cws_switch_pos = 0
+	C90DR_yoke_ap_disco_switch_pos = 0
+	C90DR_yoke_ptt_switch_pos = 0
+	C90DR_yoke_advline_switch_pos = 0
 
 	-- AUTOPILOT
 	simDR_autopilot_alt_dial_ft = C90_rndToIncr(simDR_autopilot_alt_dial_ft, 100)
